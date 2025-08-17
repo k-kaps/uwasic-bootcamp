@@ -55,7 +55,7 @@ wire nCS_fe = nCS_sync[2] & ~nCS_sync[1];
 wire nCS_re = ~nCS_sync[2] & nCS_sync[1];
 wire SCLK_re = ~SCLK_sync[2] & SCLK_sync[1];
 
-reg data_recieved;
+reg data_received;
 reg transaction;
 reg [4:0] num_bits;
 reg [15:0] transaction_reg;
@@ -65,33 +65,31 @@ reg [7:0] data;
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         num_bits <= 5'b0;
-        data_recieved <= 0;
+        data_received <= 0;
         transaction <= 0;
 		addr <= 7'b0;
         data <= 8'b0;
     end
 	else begin
 		if (transaction) begin
-			if (~data_recieved && SCLK_re) begin
+			if (~data_received && SCLK_re) begin
 				transaction_reg <= {transaction_reg[14:0], COPI_sync[1]};
 				num_bits <= num_bits + 1;
 			end
 			if (num_bits == 16) begin
 				addr <= transaction_reg[14:8];
 				data <= transaction_reg[7:0];
-				data_recieved <= 1;
-				/*
-				Some statements for debugging
+				data_received <= 1;
 				$display("transaction %h", transaction_reg);
 				$display("addr %h", addr);
 				$display("data %h", data);
-				*/
 			end
 		end
 
 		if (nCS_fe) begin
 			// transaction started
 			transaction <= 1;
+			data_received <= 0;
 		end
 		else if (nCS_re) begin
 			// transaction ended
@@ -110,7 +108,7 @@ always @(posedge clk or negedge rst_n) begin
         pwm_duty_cycle <= 8'h00;
 	end
 	else begin
-		if (~transaction && data_recieved) begin
+		if (~transaction && data_received) begin
 			if (addr == 7'h0) begin
 				en_reg_out_7_0 <= data;
 			end
@@ -126,7 +124,6 @@ always @(posedge clk or negedge rst_n) begin
 			else if (addr == 7'h4) begin
 				pwm_duty_cycle <= data;
 			end
-			data_recieved <= 0;
 		end
 	end
 end
