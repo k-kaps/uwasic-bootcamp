@@ -66,7 +66,7 @@ reg [7:0] data;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        num_bits <= 4'b0;
+        num_bits <= 5'b0;
         data_recieved <= 0;
         transaction <= 0;
 		addr <= 7'b0;
@@ -81,7 +81,7 @@ always @(posedge clk or negedge rst_n) begin
 			if (num_bits == 16) begin
 				addr <= transaction_reg[14:8];
 				data <= transaction_reg[7:0];
-				data_recieved = 1;
+				data_recieved <= 1;
 				/*
 				Some statements for debugging
 				$display("transaction %h", transaction_reg);
@@ -103,11 +103,8 @@ always @(posedge clk or negedge rst_n) begin
 	end
 end
 
-reg output_written;
-
 always @(posedge clk or negedge rst_n) begin
 	if (!rst_n) begin
-		output_written <= 0;
 		en_reg_out_7_0 <= 8'h00;
         en_reg_out_15_8 <= 8'h00;
         en_reg_pwm_7_0 <= 8'h00;
@@ -116,19 +113,19 @@ always @(posedge clk or negedge rst_n) begin
 	end
 	else begin
 		if (~transaction && data_recieved) begin
-			if (addr == 4'h0) begin
+			if (addr == 6'h0) begin
 				en_reg_out_7_0 <= data;
 			end
-			else if (addr == 4'h1) begin
+			else if (addr == 6'h1) begin
 				en_reg_out_15_8 <= data;
 			end
-			else if (addr == 4'h2) begin
+			else if (addr == 6'h2) begin
 				en_reg_pwm_7_0 <= data;
 			end
-			else if (addr == 4'h3) begin
+			else if (addr == 6'h3) begin
 				en_reg_pwm_15_8 <= data;
 			end
-			else if (addr == 4'h4) begin
+			else if (addr == 6'h4) begin
 				pwm_duty_cycle <= data;
 			end
 			data_recieved <= 0;
