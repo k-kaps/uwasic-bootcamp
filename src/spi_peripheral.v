@@ -12,7 +12,7 @@
 */
 
 module spi_peripheral (
-	input wire [7:0] ui_in,
+	input wire [2:0] ui_in,
 	input 	   clk,
 	input	   rst_n,
 	output reg [7:0] en_reg_out_7_0,
@@ -53,8 +53,6 @@ end
 
 wire nCS_fe = nCS_sync[2] & ~nCS_sync[1];
 wire nCS_re = ~nCS_sync[2] & nCS_sync[1];
-
-wire SCLK_fe = SCLK_sync[2] & ~SCLK_sync[1];
 wire SCLK_re = ~SCLK_sync[2] & SCLK_sync[1];
 
 reg data_recieved;
@@ -113,24 +111,26 @@ always @(posedge clk or negedge rst_n) begin
 	end
 	else begin
 		if (~transaction && data_recieved) begin
-			if (addr == 6'h0) begin
+			if (addr == 7'h0) begin
 				en_reg_out_7_0 <= data;
 			end
-			else if (addr == 6'h1) begin
+			else if (addr == 7'h1) begin
 				en_reg_out_15_8 <= data;
 			end
-			else if (addr == 6'h2) begin
+			else if (addr == 7'h2) begin
 				en_reg_pwm_7_0 <= data;
 			end
-			else if (addr == 6'h3) begin
+			else if (addr == 7'h3) begin
 				en_reg_pwm_15_8 <= data;
 			end
-			else if (addr == 6'h4) begin
+			else if (addr == 7'h4) begin
 				pwm_duty_cycle <= data;
 			end
 			data_recieved <= 0;
 		end
 	end
 end
+
+wire _unused = &{COPI_sync[2], transaction_reg[15]};
 
 endmodule

@@ -40,7 +40,7 @@ module tt_um_uwasic_onboarding_karan_kapoor (
   );
 
   spi_peripheral spi_peripheral_inst (
-    .ui_in(ui_in),
+    .ui_in({ui_in[2], ui_in[1], ui_in[0]}),
     .clk(clk),
     .rst_n(rst_n),
     .en_reg_out_7_0(en_reg_out_7_0),
