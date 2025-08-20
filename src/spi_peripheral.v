@@ -80,9 +80,10 @@ always @(posedge clk or negedge rst_n) begin
 				addr <= transaction_reg[14:8];
 				data <= transaction_reg[7:0];
 				data_received <= 1;
-				$display("transaction %h", transaction_reg);
-				$display("addr %h", addr);
-				$display("data %h", data);
+				// For debugging:
+				// $display("transaction %h", transaction_reg);
+				// $display("addr %h", addr);
+				// $display("data %h", data);
 			end
 		end
 
