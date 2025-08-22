@@ -83,6 +83,50 @@ async def send_spi_transaction(dut, r_w, address, data):
     await ClockCycles(dut.clk, 600)
     return ui_in_logicarray(ncs, bit, sclk)
 
+async def find_avg_freq(dut, output, port):
+    if output == 0x00:
+        signal = dut.uo_out
+    elif output == 0x01:
+        signal = dut.uio_out
+    else:
+        dut._log.error("output can be on 0x00 or 0x01") 
+        return
+     
+    count = 0
+    frequency_sum = 0
+
+    while count < 3:
+        while signal.value == port:
+            await RisingEdge(dut.clk)
+    
+        while signal.value != port:
+            await RisingEdge(dut.clk)
+        
+        time1 = cocotb.utils.get_sim_time(units="ns")
+
+        while signal.value == port:
+            await RisingEdge(dut.clk)
+
+        while signal.value != port:
+            await RisingEdge(dut.clk)
+
+        time2 = cocotb.utils.get_sim_time(units="ns")
+
+        dut._log.info(f"Rising Edge 1 at {time1}")
+        dut._log.info(f"Rising Edge 2 at {time2}")
+
+        time_diff = (time2 - time1)
+        frequency = 10**9 * 1/time_diff
+        
+        dut._log.info(f"Frequency for run {count}: {frequency}")
+
+        frequency_sum += frequency
+        count+=1
+    
+    frequency_avg = frequency_sum/3
+
+    return frequency_avg
+ 
 @cocotb.test()
 async def test_spi(dut):
     dut._log.info("Start SPI test")
@@ -152,10 +196,54 @@ async def test_spi(dut):
 @cocotb.test()
 async def test_pwm_freq(dut):
     # Write your test here
+    dut._log.info("Start PWM Frequency Test")
+
+    # Set the clock period to 100 ns (10 MHz)
+    clock = Clock(dut.clk, 100, units="ns")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.ena.value = 1
+    ncs = 1
+    bit = 0
+    sclk = 0
+    dut.ui_in.value = ui_in_logicarray(ncs, bit, sclk)
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 5)
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 5)
+
+    # set duty cycle to 50%
+    ui_in_val = await send_spi_transaction(dut, 1, 0x04, 0x80)
+
+    # for uo_out
+    ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0x01)
+    assert dut.uo_out.value == 0x01, f"Expected {0x01}, got {dut.uo_out.value}"
+    ui_in_val = await send_spi_transaction(dut, 1, 0x02, 0x01)
+    frequency = await find_avg_freq(dut, 0x00, 0x01)
+    assert 2970 <= frequency <= 3030, f"Expected frequency to be 2970 to 3030, got {frequency}"
+
+    # reset uo out reg and uo pwm reg
+    ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0x00)
+    ui_in_val = await send_spi_transaction(dut, 1, 0x02, 0x00)
+
+    # for uio_out
+    ui_in_val = await send_spi_transaction(dut, 1, 0x01, 0x04)
+    assert dut.uio_out.value == 0x04, f"Expected {0x04}, got {dut.uio_out.value}"
+    ui_in_val = await send_spi_transaction(dut, 1, 0x03, 0x04)
+    frequency = await find_avg_freq(dut, 0x01, 0x04)
+    assert 2970 <= frequency <= 3030, f"Expected frequency to be 2970 to 3030, got {frequency}"
+
+    # reset uo out reg and uo pwm reg
+    ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0x00)
+    ui_in_val = await send_spi_transaction(dut, 1, 0x02, 0x00)
+
     dut._log.info("PWM Frequency test completed successfully")
 
 
 @cocotb.test()
 async def test_pwm_duty(dut):
     # Write your test here
+
     dut._log.info("PWM Duty Cycle test completed successfully")
